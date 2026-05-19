@@ -1,25 +1,51 @@
 import cv2
-import os
+from pathlib import Path
 
 
-INPUT_IMAGE_PATH = "images/input/damaged_photo.jpg"
-OUTPUT_DIR = "images/output"
-GRAYSCALE_OUTPUT_PATH = os.path.join(OUTPUT_DIR, "grayscale_photo.jpg")
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+INPUT_IMAGE_PATH = BASE_DIR / "images" / "input" / "damaged_photo.jpg"
+OUTPUT_DIR = BASE_DIR / "images" / "output"
+
+GRAYSCALE_OUTPUT_PATH = OUTPUT_DIR / "grayscale_photo.jpg"
+CONTRAST_OUTPUT_PATH = OUTPUT_DIR / "contrast_enhanced_photo.jpg"
+
+
+def load_image(image_path):
+    image = cv2.imread(str(image_path))
+
+    if image is None:
+        raise FileNotFoundError(f"Could not load image from {image_path}")
+
+    return image
+
+
+def convert_to_grayscale(image):
+    return cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+
+def enhance_contrast(grayscale_image):
+    clahe = cv2.createCLAHE(
+        clipLimit=2.0,
+        tileGridSize=(8, 8)
+    )
+
+    return clahe.apply(grayscale_image)
 
 
 def main():
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
-    image = cv2.imread(INPUT_IMAGE_PATH)
+    image = load_image(INPUT_IMAGE_PATH)
 
-    if image is None:
-        raise FileNotFoundError(f"Could not load image from {INPUT_IMAGE_PATH}")
+    grayscale = convert_to_grayscale(image)
+    contrast_enhanced = enhance_contrast(grayscale)
 
-    grayscale = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    cv2.imwrite(GRAYSCALE_OUTPUT_PATH, grayscale)
+    cv2.imwrite(str(GRAYSCALE_OUTPUT_PATH), grayscale)
+    cv2.imwrite(str(CONTRAST_OUTPUT_PATH), contrast_enhanced)
 
     print(f"Grayscale image saved to: {GRAYSCALE_OUTPUT_PATH}")
+    print(f"Contrast enhanced image saved to: {CONTRAST_OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
