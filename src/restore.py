@@ -9,6 +9,7 @@ OUTPUT_DIR = BASE_DIR / "images" / "output"
 
 GRAYSCALE_OUTPUT_PATH = OUTPUT_DIR / "grayscale_photo.jpg"
 CONTRAST_OUTPUT_PATH = OUTPUT_DIR / "contrast_enhanced_photo.jpg"
+DENOISED_OUTPUT_PATH = OUTPUT_DIR / "denoised_photo.jpg"
 
 
 def load_image(image_path):
@@ -33,6 +34,16 @@ def enhance_contrast(grayscale_image):
     return clahe.apply(grayscale_image)
 
 
+def reduce_noise(image):
+    return cv2.fastNlMeansDenoising(
+        image,
+        None,
+        h=10,
+        templateWindowSize=7,
+        searchWindowSize=21
+    )
+
+
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
@@ -40,12 +51,15 @@ def main():
 
     grayscale = convert_to_grayscale(image)
     contrast_enhanced = enhance_contrast(grayscale)
+    denoised = reduce_noise(contrast_enhanced)
 
     cv2.imwrite(str(GRAYSCALE_OUTPUT_PATH), grayscale)
     cv2.imwrite(str(CONTRAST_OUTPUT_PATH), contrast_enhanced)
+    cv2.imwrite(str(DENOISED_OUTPUT_PATH), denoised)
 
     print(f"Grayscale image saved to: {GRAYSCALE_OUTPUT_PATH}")
     print(f"Contrast enhanced image saved to: {CONTRAST_OUTPUT_PATH}")
+    print(f"Denoised image saved to: {DENOISED_OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
