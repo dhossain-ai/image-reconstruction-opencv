@@ -12,6 +12,8 @@ MASK_DIR = BASE_DIR / "masks"
 GRAYSCALE_OUTPUT_PATH = OUTPUT_DIR / "grayscale_photo.jpg"
 CONTRAST_OUTPUT_PATH = OUTPUT_DIR / "contrast_enhanced_photo.jpg"
 DENOISED_OUTPUT_PATH = OUTPUT_DIR / "denoised_photo.jpg"
+INPAINTED_OUTPUT_PATH = OUTPUT_DIR / "inpainted_photo.jpg"
+
 MASK_OUTPUT_PATH = MASK_DIR / "scratch_crack_mask.jpg"
 
 
@@ -81,16 +83,27 @@ def main():
     contrast_enhanced = enhance_contrast(grayscale)
     denoised = reduce_noise(contrast_enhanced)
     damage_mask = generate_damage_mask(denoised)
+    inpainted = inpaint_damage(denoised, damage_mask)
 
     cv2.imwrite(str(GRAYSCALE_OUTPUT_PATH), grayscale)
     cv2.imwrite(str(CONTRAST_OUTPUT_PATH), contrast_enhanced)
     cv2.imwrite(str(DENOISED_OUTPUT_PATH), denoised)
     cv2.imwrite(str(MASK_OUTPUT_PATH), damage_mask)
+    cv2.imwrite(str(INPAINTED_OUTPUT_PATH), inpainted)
 
     print(f"Grayscale image saved to: {GRAYSCALE_OUTPUT_PATH}")
     print(f"Contrast enhanced image saved to: {CONTRAST_OUTPUT_PATH}")
     print(f"Denoised image saved to: {DENOISED_OUTPUT_PATH}")
     print(f"Damage mask saved to: {MASK_OUTPUT_PATH}")
+    print(f"Inpainted image saved to: {INPAINTED_OUTPUT_PATH}")
+
+def inpaint_damage(image, mask):
+    return cv2.inpaint(
+        image,
+        mask,
+        inpaintRadius=3,
+        flags=cv2.INPAINT_TELEA
+    )    
 
 
 if __name__ == "__main__":
