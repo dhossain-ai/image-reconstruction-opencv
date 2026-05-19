@@ -1,4 +1,5 @@
 import cv2
+import numpy as np
 from pathlib import Path
 
 
@@ -6,10 +7,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 INPUT_IMAGE_PATH = BASE_DIR / "images" / "input" / "damaged_photo.jpg"
 OUTPUT_DIR = BASE_DIR / "images" / "output"
+MASK_DIR = BASE_DIR / "masks"
 
 GRAYSCALE_OUTPUT_PATH = OUTPUT_DIR / "grayscale_photo.jpg"
 CONTRAST_OUTPUT_PATH = OUTPUT_DIR / "contrast_enhanced_photo.jpg"
 DENOISED_OUTPUT_PATH = OUTPUT_DIR / "denoised_photo.jpg"
+MASK_OUTPUT_PATH = MASK_DIR / "scratch_crack_mask.jpg"
 
 
 def load_image(image_path):
@@ -44,22 +47,43 @@ def reduce_noise(image):
     )
 
 
+def generate_damage_mask(image):
+    # Detect strong edges, including scratches and cracks
+    edges = cv2.Canny(image, 50, 150)
+
+    # Detect very bright damaged regions
+    _, bright_mask = cv2.threshold(image, 210, 255, cv2.THRESH_BINARY)
+
+    # Combine edge mask and bright damage mask
+    mask = cv2.bitwise_or(edges, bright_mask)
+
+    # Slightly enlarge damaged areas so inpainting covers them fully
+    kernel = np.ones((3, 3), np.uint8)
+    mask = cv2.dilate(mask, kernel, iterations=1)
+
+    return mask
+
+
 def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+    MASK_DIR.mkdir(parents=True, exist_ok=True)
 
     image = load_image(INPUT_IMAGE_PATH)
 
     grayscale = convert_to_grayscale(image)
     contrast_enhanced = enhance_contrast(grayscale)
     denoised = reduce_noise(contrast_enhanced)
+    damage_mask = generate_damage_mask(denoised)
 
     cv2.imwrite(str(GRAYSCALE_OUTPUT_PATH), grayscale)
     cv2.imwrite(str(CONTRAST_OUTPUT_PATH), contrast_enhanced)
     cv2.imwrite(str(DENOISED_OUTPUT_PATH), denoised)
+    cv2.imwrite(str(MASK_OUTPUT_PATH), damage_mask)
 
     print(f"Grayscale image saved to: {GRAYSCALE_OUTPUT_PATH}")
     print(f"Contrast enhanced image saved to: {CONTRAST_OUTPUT_PATH}")
     print(f"Denoised image saved to: {DENOISED_OUTPUT_PATH}")
+    print(f"Damage mask saved to: {MASK_OUTPUT_PATH}")
 
 
 if __name__ == "__main__":
