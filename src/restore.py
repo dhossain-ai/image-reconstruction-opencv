@@ -48,20 +48,27 @@ def reduce_noise(image):
 
 
 def generate_damage_mask(image):
-    # Detect strong edges, including scratches and cracks
-    edges = cv2.Canny(image, 50, 150)
+    # Detect very bright damaged areas such as scratches and torn photo marks
+    _, bright_mask = cv2.threshold(image, 200, 255, cv2.THRESH_BINARY)
 
-    # Detect very bright damaged regions
-    _, bright_mask = cv2.threshold(image, 210, 255, cv2.THRESH_BINARY)
+    # Remove small noise from the mask
+    kernel_small = np.ones((2, 2), np.uint8)
+    cleaned_mask = cv2.morphologyEx(
+        bright_mask,
+        cv2.MORPH_OPEN,
+        kernel_small,
+        iterations=1
+    )
 
-    # Combine edge mask and bright damage mask
-    mask = cv2.bitwise_or(edges, bright_mask)
+    # Connect broken scratch/crack regions
+    kernel_line = np.ones((3, 3), np.uint8)
+    refined_mask = cv2.dilate(
+        cleaned_mask,
+        kernel_line,
+        iterations=1
+    )
 
-    # Slightly enlarge damaged areas so inpainting covers them fully
-    kernel = np.ones((3, 3), np.uint8)
-    mask = cv2.dilate(mask, kernel, iterations=1)
-
-    return mask
+    return refined_mask
 
 
 def main():
